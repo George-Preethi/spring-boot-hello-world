@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/George-Preethi/spring-boot-hello-world.git' // Replace placeholders with your repo details
+            }
+        }
+        stage('Build') {
+            steps {
+                // Assuming you use Maven. Adjust for Gradle if needed.
+                sh 'mvn clean package'
+            }
+        }
+        stage('SonarQube Scan') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQube Scanner' // Make sure 'SonarQube Scanner' is configured in Jenkins Tool installations (see below)
+                    withSonarQubeEnv('my-sonarqube-server') { // Use the name you configured in Jenkins SonarQube servers
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectkey='SonarQube_serve' -Dsonar.projectName='SonarQube_server' -Dsonar.sources=. -Dsonar.java.binaries=target/classes"
+                    }
+                }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                script {
+                    timeout(time: 1, unit: 'HOURS') { // Wait for SonarQube quality gate result
+                        waitForQualityGate abortPipeline: true
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                // Your deployment steps here (e.g., deploy to a server, Dockerize, etc.)
+                echo 'Deployment stage - Placeholder'
+            }
+        }
+    }
+}
